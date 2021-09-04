@@ -137,8 +137,12 @@ export class CypressTestRailReporter extends reporters.Spec {
         /**
          * Notify about the results at the end of execution
          */
-        var path = `runs/view/${this.runId}`;
-        TestRailLogger.log(`Results are published to ${chalk.magenta(`${this.reporterOptions.host}/index.php?/${path}`)}`);
+        if (this.results.length == 0) {
+          TestRailLogger.warn('No testcases were matched with TestRail. Ensure that your tests are declared correctly and titles contain matches to format of Cxxxx');
+        } else {
+          var path = `runs/view/${this.runId}`;
+          TestRailLogger.log(`Results are published to ${chalk.magenta(`${this.reporterOptions.host}/index.php?/${path}`)}`);
+        }
       });
     }
   }
@@ -151,14 +155,30 @@ export class CypressTestRailReporter extends reporters.Spec {
    */
   public submitResults (status, test, comment) {
     let caseIds = titleToCaseIds(test.title)
+    const invalidCaseIds = caseIds.filter(caseId => !this.serverTestCaseIds.includes(caseId));
+    caseIds = caseIds.filter(caseId => this.serverTestCaseIds.includes(caseId))
+    if (invalidCaseIds.length > 0)
+      TestRailLogger.log(`The following test IDs were found in Cypress tests, but not found in Testrail: ${invalidCaseIds}`)
+
     if (caseIds.length) {
       const caseResults = caseIds.map(caseId => {
-        this.testRailApi.publishResult({
+        return {
           case_id: caseId,
           status_id: status,
-          comment: `Execution time: ${test.duration}ms`,
-        })
+          comment: comment,
+        };
       });
+      this.results.push(...caseResults);
+      const publishedResults = this.testRailApi.publishResults(caseResults)
+      if (
+        publishedResults !== undefined &&
+        this.reporterOptions.allowFailedScreenshotUpload === true &&
+        (status === Status.Failed || status === Status.Retest)
+      ) {
+        publishedResults.forEach((result) => {
+          this.testRailApi.uploadScreenshots(caseIds[0], result.id);
+        })
+      }
     }
   }
 }

@@ -49,7 +49,6 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TestRail = void 0;
 var axios = require('axios');
-var deasync = require('deasync');
 var fs = require('fs');
 var path = require('path');
 var FormData = require('form-data');
@@ -63,26 +62,7 @@ var TestRail = /** @class */ (function () {
         this.base = options.host + "/index.php?/api/v2";
         this.runId;
     }
-    /**
-     * To work around a Cypress issue where Mocha exits before async requests
-     * finish, we use the deasync library to ensure our axios promises
-     * actually complete. For more information, see:
-     * https://github.com/cypress-io/cypress/issues/7139
-     * @param promise A `finally` condition will be appended to this promise, enabling a deasync loop
-     */
-    TestRail.prototype.makeSync = function (promise) {
-        var _this = this;
-        var done = false;
-        var result = undefined;
-        (function () { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0: return [4 /*yield*/, promise.finally(function () { return done = true; })];
-                case 1: return [2 /*return*/, result = _a.sent()];
-            }
-        }); }); })();
-        deasync.loopWhile(function () { return !done; });
-        return result;
-    };
+
     TestRail.prototype.getCases = function (suiteId) {
         var url = this.base + "/get_cases/" + this.options.projectId + "&suite_id=" + suiteId;
         if (this.options.groupId) {
@@ -94,7 +74,7 @@ var TestRail = /** @class */ (function () {
         if (this.options.typeId) {
             url += "&type_id=" + this.options.typeId;
         }
-        return this.makeSync(axios({
+        return axios({
             method: 'get',
             url: url,
             headers: { 'Content-Type': 'application/json' },
@@ -106,7 +86,7 @@ var TestRail = /** @class */ (function () {
             .then(function (response) {
             return response.data.map(function (item) { return item.id; });
         })
-            .catch(function (error) { return console.error(error); }));
+            .catch(function (error) { return console.error(error); });
     };
     TestRail.prototype.createRun = function (name, description, suiteId) {
         var _this = this;
@@ -114,7 +94,7 @@ var TestRail = /** @class */ (function () {
             this.includeAll = false;
             this.caseIds = this.getCases(suiteId);
         }
-        this.makeSync(axios({
+        axios({
             method: 'post',
             url: this.base + "/add_run/" + this.options.projectId,
             headers: { 'Content-Type': 'application/json' },
@@ -135,11 +115,11 @@ var TestRail = /** @class */ (function () {
             // cache the TestRail Run ID
             TestRailCache.store('runId', _this.runId);
         })
-            .catch(function (error) { return console.error(error); }));
+            .catch(function (error) { return console.error(error); });
     };
     TestRail.prototype.deleteRun = function () {
         this.runId = TestRailCache.retrieve('runId');
-        this.makeSync(axios({
+        axios({
             method: 'post',
             url: this.base + "/delete_run/" + this.runId,
             headers: { 'Content-Type': 'application/json' },
@@ -147,11 +127,11 @@ var TestRail = /** @class */ (function () {
                 username: this.options.username,
                 password: this.options.password,
             },
-        }).catch(function (error) { return console.error(error); }));
+        }).catch(function (error) { return console.error(error); });
     };
     TestRail.prototype.publishResults = function (results) {
         this.runId = TestRailCache.retrieve('runId');
-        return this.makeSync(axios({
+        return axios({
             method: 'post',
             url: this.base + "/add_results_for_cases/" + this.runId,
             headers: { 'Content-Type': 'application/json' },
@@ -164,12 +144,12 @@ var TestRail = /** @class */ (function () {
             .then(function (response) { return response.data; })
             .catch(function (error) {
             console.error(error);
-        }));
+        });
     };
     TestRail.prototype.uploadAttachment = function (resultId, path) {
         var form = new FormData();
         form.append('attachment', fs.createReadStream(path));
-        this.makeSync(axios({
+        axios({
             method: 'post',
             url: this.base + "/add_attachment_to_result/" + resultId,
             headers: __assign({}, form.getHeaders()),
@@ -178,7 +158,7 @@ var TestRail = /** @class */ (function () {
                 password: this.options.password,
             },
             data: form,
-        }));
+        });
     };
     // This function will attach failed screenshot on each test result(comment) if founds it
     TestRail.prototype.uploadScreenshots = function (caseId, resultId) {
@@ -203,7 +183,7 @@ var TestRail = /** @class */ (function () {
     ;
     TestRail.prototype.closeRun = function () {
         this.runId = TestRailCache.retrieve('runId');
-        this.makeSync(axios({
+        axios({
             method: 'post',
             url: this.base + "/close_run/" + this.runId,
             headers: { 'Content-Type': 'application/json' },
@@ -215,7 +195,7 @@ var TestRail = /** @class */ (function () {
             .then(function () {
             TestRailLogger.log('Test run closed successfully');
         })
-            .catch(function (error) { return console.error(error); }));
+            .catch(function (error) { return console.error(error); });
     };
     return TestRail;
 }());

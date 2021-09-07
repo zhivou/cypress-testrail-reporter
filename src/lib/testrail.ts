@@ -49,7 +49,6 @@ export class TestRail {
 
   public createRun (name: string, description: string, suiteId: number) {
     if (this.options.includeAllInTestRun === false){
-      TestRailLogger.warn(`createRun: includeAllInTestRun === false, there will be only included test cases per suiteId:${suiteId}`)
       this.includeAll = false;
       this.caseIds = this.getCases(suiteId);
     }
@@ -66,7 +65,7 @@ export class TestRail {
           name,
           description,
           include_all: this.includeAll,
-          case_ids: this.caseIds
+          case_ids: this.includeAll ? [] : this.caseIds
         }),
       })
       .then(response => {

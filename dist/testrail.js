@@ -57,7 +57,6 @@ var TestRail = /** @class */ (function () {
     TestRail.prototype.createRun = function (name, description, suiteId) {
         var _this = this;
         if (this.options.includeAllInTestRun === false) {
-            TestRailLogger.warn("createRun: includeAllInTestRun === false, there will be only included test cases per suiteId:" + suiteId);
             this.includeAll = false;
             this.caseIds = this.getCases(suiteId);
         }
@@ -74,7 +73,7 @@ var TestRail = /** @class */ (function () {
                 name: name,
                 description: description,
                 include_all: this.includeAll,
-                case_ids: this.caseIds
+                case_ids: this.includeAll ? [] : this.caseIds
             }),
         })
             .then(function (response) {

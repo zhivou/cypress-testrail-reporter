@@ -32,7 +32,10 @@ export class TestRail {
     return axios({
         method:'get',
         url: url,
-        headers: { 'Content-Type': 'application/json' }, 
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-ident' : 'beta'
+        },
         auth: {
             username: this.options.username,
             password: this.options.password

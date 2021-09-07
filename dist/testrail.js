@@ -50,7 +50,6 @@ var TestRail = /** @class */ (function () {
             }
         })
             .then(function (response) {
-            console.debug(response.data);
             return response.data.map(function (item) { return item.id; });
         })
             .catch(function (error) { return console.error(error); });
@@ -58,6 +57,7 @@ var TestRail = /** @class */ (function () {
     TestRail.prototype.createRun = function (name, description, suiteId) {
         var _this = this;
         if (this.options.includeAllInTestRun === false) {
+            TestRailLogger.warn("createRun: includeAllInTestRun === false, there will be only included test cases per suiteId:" + suiteId);
             this.includeAll = false;
             this.caseIds = this.getCases(suiteId);
         }

@@ -39,9 +39,10 @@ export class TestRail {
         auth: {
             username: this.options.username,
             password: this.options.password
-        } 
+        }
       })
       .then(response => {
+        console.debug(response.data)
         return response.data.map(item =>item.id)
       })
       .catch(error => console.error(error))

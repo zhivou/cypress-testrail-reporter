@@ -50,6 +50,7 @@ var TestRail = /** @class */ (function () {
             }
         })
             .then(function (response) {
+            console.debug(response.data);
             return response.data.map(function (item) { return item.id; });
         })
             .catch(function (error) { return console.error(error); });

@@ -85,6 +85,7 @@ export class CypressTestRailReporter extends reporters.Spec {
         if (!TestRailCache.retrieve('runId')) {
             if (this.reporterOptions.suiteId) {
               TestRailLogger.log(`Following suiteId has been set in cypress.json file: ${this.suiteId}`);
+              TestRailLogger.warn(`Starting with following options: ${this.reporterOptions}`)
             }
             const executionDateTime = moment().format('MMM Do YYYY, HH:mm (Z)');
             const name = `${this.reporterOptions.runName || 'Automated test run'} ${executionDateTime}`;

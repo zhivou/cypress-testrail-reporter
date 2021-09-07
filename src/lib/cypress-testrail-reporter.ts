@@ -83,7 +83,8 @@ export class CypressTestRailReporter extends reporters.Spec {
         * which case that will be used and no new one created.
         */
         if (!TestRailCache.retrieve('runId')) {
-          TestRailLogger.warn(`Starting with following options: ${this.reporterOptions}`)
+          TestRailLogger.warn('Starting with following options: ')
+          console.debug(this.reporterOptions)
             if (this.reporterOptions.suiteId) {
               TestRailLogger.log(`Following suiteId has been set in cypress.json file: ${this.suiteId}`);
             }

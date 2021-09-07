@@ -87,7 +87,8 @@ var CypressTestRailReporter = /** @class */ (function (_super) {
                 * which case that will be used and no new one created.
                 */
                 if (!TestRailCache.retrieve('runId')) {
-                    TestRailLogger.warn("Starting with following options: " + _this.reporterOptions);
+                    TestRailLogger.warn('Starting with following options: ');
+                    console.debug(_this.reporterOptions);
                     if (_this.reporterOptions.suiteId) {
                         TestRailLogger.log("Following suiteId has been set in cypress.json file: " + _this.suiteId);
                     }

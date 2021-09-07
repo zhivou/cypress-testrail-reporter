@@ -1,6 +1,6 @@
 {
   "name": "@mncharlton/cypress-testrail-reporter",
-  "version": "1.3.3",
+  "version": "1.3.5",
   "description": "A Testrail reporter for cypress including TestRail API basic library",
   "main": "index.js",
   "private": false,

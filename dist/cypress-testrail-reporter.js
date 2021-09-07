@@ -46,6 +46,9 @@ var CypressTestRailReporter = /** @class */ (function (_super) {
         if (process.env.CYPRESS_TESTRAIL_REPORTER_GROUPID) {
             _this.reporterOptions.runName = process.env.CYPRESS_TESTRAIL_REPORTER_GROUPID;
         }
+        if (process.env.CYPRESS_TESTRAIL_RUN_ID) {
+            TestRailCache.store('runId', process.env.CYPRESS_TESTRAIL_RUN_ID);
+        }
         _this.testRailApi = new testrail_1.TestRail(_this.reporterOptions);
         _this.testRailValidation = new testrail_validation_1.TestRailValidation(_this.reporterOptions);
         /**
@@ -117,31 +120,6 @@ var CypressTestRailReporter = /** @class */ (function (_super) {
             });
             runner.on('retry', function (test) {
                 _this.submitResults(testrail_interface_1.Status.Retest, test, 'Cypress retry logic has been triggered!');
-            });
-            runner.on('end', function () {
-                /**
-                 * When we reach final number of spec files
-                 * we should close test run at the end
-                 */
-                var numSpecFiles = _this.testRailValidation.countTestSpecFiles();
-                var counter = TestRailCache.retrieve('runCounter');
-                // load runId before purging testrail-cache.txt
-                _this.runId = TestRailCache.retrieve('runId');
-                if (numSpecFiles.length > counter) {
-                    runCounter++;
-                }
-                else {
-                    _this.testRailApi.closeRun();
-                    /**
-                     * Remove testrail-cache.txt file at the end of execution
-                     */
-                    TestRailCache.purge();
-                }
-                /**
-                 * Notify about the results at the end of execution
-                 */
-                var path = "runs/view/" + _this.runId;
-                TestRailLogger.log("Results are published to " + chalk.magenta(_this.reporterOptions.host + "/index.php?/" + path));
             });
         }
         return _this;

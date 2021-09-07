@@ -104,6 +104,24 @@ export class TestRail {
       })
   }
 
+  public publishResult(results: TestRailResult){
+    this.runId = TestRailCache.retrieve('runId');
+    axios.post(
+      `${this.base}/add_results_for_cases/${this.runId}`,
+      {
+        results: [{ case_id: results.case_id, status_id: results.status_id, comment: results.comment }],
+      },
+      {
+        auth: {
+          username: this.options.username,
+          password: this.options.password,
+        },
+      }
+    ).catch(error => { 
+      console.error(error); 
+    })
+  }
+
   public uploadAttachment (resultId, path) {
     const form = new FormData();
     form.append('attachment', fs.createReadStream(path));

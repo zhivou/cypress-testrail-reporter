@@ -39,6 +39,10 @@ export class CypressTestRailReporter extends reporters.Spec {
       this.reporterOptions.runName = process.env.CYPRESS_TESTRAIL_REPORTER_GROUPID;
     }
 
+    if (process.env.CYPRESS_TESTRAIL_RUN_ID) {
+      TestRailCache.store('runId', process.env.CYPRESS_TESTRAIL_RUN_ID);
+    }
+
     this.testRailApi = new TestRail(this.reporterOptions);
     this.testRailValidation = new TestRailValidation(this.reporterOptions);
 
@@ -112,33 +116,6 @@ export class CypressTestRailReporter extends reporters.Spec {
 
       runner.on('retry', test => {
         this.submitResults(Status.Retest, test, 'Cypress retry logic has been triggered!');
-      });
-
-      runner.on('end', () => {
-        /**
-         * When we reach final number of spec files 
-         * we should close test run at the end
-         */
-        var numSpecFiles = this.testRailValidation.countTestSpecFiles();
-        var counter = TestRailCache.retrieve('runCounter');
-        // load runId before purging testrail-cache.txt
-        this.runId = TestRailCache.retrieve('runId');
-
-        if (numSpecFiles.length > counter) {
-          runCounter++
-        } else {
-          this.testRailApi.closeRun();
-          /**
-           * Remove testrail-cache.txt file at the end of execution
-           */
-          TestRailCache.purge();
-        }
-
-        /**
-         * Notify about the results at the end of execution
-         */
-        var path = `runs/view/${this.runId}`;
-        TestRailLogger.log(`Results are published to ${chalk.magenta(`${this.reporterOptions.host}/index.php?/${path}`)}`);
       });
     }
   }

@@ -66,54 +66,6 @@ var TestRailValidation = /** @class */ (function () {
             return suiteId;
         }
     };
-    /**
-     * This function will count how many test spec files do we have during execution
-     * and based on that we will wait until last one is executed to close active test run in TestRail
-     */
-    TestRailValidation.prototype.countTestSpecFiles = function () {
-        // Read and store cli arguments into array
-        var cliArgs = process.argv.slice(2);
-        /**
-         * Count how many test files will be included in the run
-         * to be able to close test run after last one
-         */
-        var index, value, result, directory;
-        var workingDirectory = [];
-        var specFiles = [];
-        var specFilesArray = [];
-        for (index = 0; index < cliArgs.length; ++index) {
-            value = cliArgs[index];
-            if (value.includes("cypress/integration") === true ||
-                value.includes("cypress/tests") === true) {
-                result = value;
-                break;
-            }
-        }
-        var specArg = result.split(/,/);
-        for (index = 0; index < specArg.length; ++index) {
-            value = specArg[index];
-            result = value.replace(/(?:\.(?![^.]+$)|[^\w])+/g, "/");
-            directory = result.replace(/\b(js|ts|feature)\b/, '');
-            workingDirectory.push(directory);
-        }
-        for (index = 0; index < workingDirectory.length; ++index) {
-            value = workingDirectory[index];
-            var options = {
-                cwd: value,
-                nodir: true
-            };
-            result = glob.sync("*", options);
-            specFiles.push(result);
-        }
-        /**
-         * Since in previous steps we create 2D array,
-         * we need to covert it to 1D in order to get desired length
-         */
-        for (index = 0; index < specFiles.length; ++index) {
-            specFilesArray = specFilesArray.concat(specFiles[index]);
-        }
-        return specFilesArray;
-    };
     return TestRailValidation;
 }());
 exports.TestRailValidation = TestRailValidation;

@@ -18,8 +18,12 @@ export class TestRail {
     this.runId;
   }
 
-  public getCases (suiteId: number) {
+  public getCases (suiteId: number, nextURL: boolean | string, cases: Number[], resolve, reject,) {
     let url = `${this.base}/get_cases/${this.options.projectId}&suite_id=${suiteId}`
+
+    if (nextURL) {
+      url += nextURL;
+    }
     if (this.options.groupId) {
       url += `&section_id=${this.options.groupId}`
     }
@@ -42,38 +46,53 @@ export class TestRail {
         }
       })
       .then(response => {
-        return response.data.map(item =>item.id)
+        const retrievedCases = cases.concat(response.data.cases.map(item =>item.id));
+        if (response.data._links.next !== null) {
+          this.getCases(suiteId, response.data._links.next, retrievedCases, resolve, reject)
+        } else {
+          resolve(retrievedCases)
+        }
       })
-      .catch(error => console.error(error))
+      .catch(error => {
+        console.error(error);
+        reject([])
+      })
   }
 
   public createRun (name: string, description: string, suiteId: number) {
     if (this.options.includeAllInTestRun === false){
       this.includeAll = false;
-      this.caseIds = this.getCases(suiteId);
+
+      new Promise<Number[]>((resolve, reject) => {
+        this.getCases(suiteId, null, [], resolve, reject)}).then(response => {
+          console.log('Creating run with following cases:');
+          console.debug(response);
+          this.caseIds = response;
+
+          axios({
+            method: 'post',
+            url: `${this.base}/add_run/${this.options.projectId}`,
+            headers: { 'Content-Type': 'application/json' },
+            auth: {
+              username: this.options.username,
+              password: this.options.password,
+            },
+            data: JSON.stringify({
+              suite_id: suiteId,
+              name,
+              description,
+              include_all: this.includeAll,
+              case_ids: this.caseIds
+            }),
+          })
+          .then(response => {
+              this.runId = response.data.id;
+              // cache the TestRail Run ID
+              TestRailCache.store('runId', this.runId);
+          })
+          .catch(error => console.error(error));
+        })
     }
-    axios({
-        method: 'post',
-        url: `${this.base}/add_run/${this.options.projectId}`,
-        headers: { 'Content-Type': 'application/json' },
-        auth: {
-          username: this.options.username,
-          password: this.options.password,
-        },
-        data: JSON.stringify({
-          suite_id: suiteId,
-          name,
-          description,
-          include_all: this.includeAll,
-          case_ids: this.includeAll ? [] : this.caseIds
-        }),
-      })
-      .then(response => {
-          this.runId = response.data.id;
-          // cache the TestRail Run ID
-          TestRailCache.store('runId', this.runId);
-      })
-      .catch(error => console.error(error));
   }
 
   public deleteRun() {

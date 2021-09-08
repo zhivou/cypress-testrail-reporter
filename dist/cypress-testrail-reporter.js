@@ -75,7 +75,7 @@ var CypressTestRailReporter = /** @class */ (function (_super) {
          */
         if (_this.suiteId && _this.suiteId.toString().length) {
             runner.on('start', function () {
-                _this.serverTestCaseIds = _this.testRailApi.getCases(_this.suiteId);
+                //this.serverTestCaseIds = this.testRailApi.getCases(this.suiteId);
                 /**
                 * runCounter is used to count how many spec files we have during one run
                 * in order to wait for close test run function

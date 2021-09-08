@@ -71,7 +71,7 @@ export class CypressTestRailReporter extends reporters.Spec {
      */
     if (this.suiteId && this.suiteId.toString().length) {
       runner.on('start', () => {
-        this.serverTestCaseIds = this.testRailApi.getCases(this.suiteId);
+        //this.serverTestCaseIds = this.testRailApi.getCases(this.suiteId);
         /**
         * runCounter is used to count how many spec files we have during one run
         * in order to wait for close test run function

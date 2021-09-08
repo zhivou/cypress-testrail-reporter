@@ -18,7 +18,7 @@ export class TestRail {
     this.runId;
   }
 
-  public getCases (suiteId: number, nextURL: boolean | string, cases: Number[], resolve, reject,) {
+  public getCases (suiteId: number, nextURL: boolean | string, cases: Number[], resolve, reject) {
     let url = `${this.base}/get_cases/${this.options.projectId}&suite_id=${suiteId}`
 
     if (nextURL) {
@@ -126,7 +126,7 @@ export class TestRail {
       })
   }
 
-  public publishResult(results: TestRailResult){
+  public publishResult(results: TestRailResult, resolve, reject){
     this.runId = TestRailCache.retrieve('runId');
     axios.post(
       `${this.base}/add_results_for_cases/${this.runId}`,
@@ -139,8 +139,14 @@ export class TestRail {
           password: this.options.password,
         },
       }
-    ).catch(error => { 
-      console.error(error); 
+      ).then(response => {
+        console.log("Publishing following results:")
+        console.debug(response.data)
+        resolve(response.data)
+      })
+      .catch(error => {
+        console.error(error);
+        reject()
     })
   }
 

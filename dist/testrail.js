@@ -131,7 +131,7 @@ var TestRail = /** @class */ (function () {
             console.error(error);
         });
     };
-    TestRail.prototype.publishResult = function (results) {
+    TestRail.prototype.publishResult = function (results, resolve, reject) {
         this.runId = TestRailCache.retrieve('runId');
         axios.post(this.base + "/add_results_for_cases/" + this.runId, {
             results: [{ case_id: results.case_id, status_id: results.status_id, comment: results.comment }],
@@ -140,8 +140,14 @@ var TestRail = /** @class */ (function () {
                 username: this.options.username,
                 password: this.options.password,
             },
-        }).catch(function (error) {
+        }).then(function (response) {
+            console.log("Publishing following results:");
+            console.debug(response.data);
+            resolve(response.data);
+        })
+            .catch(function (error) {
             console.error(error);
+            reject();
         });
     };
     TestRail.prototype.uploadAttachment = function (resultId, path) {
@@ -161,7 +167,7 @@ var TestRail = /** @class */ (function () {
     // This function will attach failed screenshot on each test result(comment) if founds it
     TestRail.prototype.uploadScreenshots = function (caseId, resultId) {
         var _this = this;
-        var SCREENSHOTS_FOLDER_PATH = path.join(__dirname, 'cypress/screenshots');
+        var SCREENSHOTS_FOLDER_PATH = path.join(__dirname, '/Users/dskrylev/monorepo/cypress/screenshots');
         fs.readdir(SCREENSHOTS_FOLDER_PATH, function (err, files) {
             if (err) {
                 return console.log('Unable to scan screenshots folder: ' + err);

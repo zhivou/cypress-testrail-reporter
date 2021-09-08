@@ -71,7 +71,6 @@ export class CypressTestRailReporter extends reporters.Spec {
      */
     if (this.suiteId && this.suiteId.toString().length) {
       runner.on('start', () => {
-        //this.serverTestCaseIds = this.testRailApi.getCases(this.suiteId);
         /**
         * runCounter is used to count how many spec files we have during one run
         * in order to wait for close test run function
@@ -131,11 +130,18 @@ export class CypressTestRailReporter extends reporters.Spec {
   public submitResults (status, test, comment) {
     let caseIds = titleToCaseIds(test.title)
     if (caseIds.length) {
-      const caseResults = caseIds.map(caseId => {
-        this.testRailApi.publishResult({
-          case_id: caseId,
-          status_id: status,
-          comment: `Execution time: ${test.duration}ms`,
+      caseIds.map(caseId => {
+        new Promise<any>((resolve, reject) => {
+          this.testRailApi.publishResult({
+            case_id: caseId,
+            status_id: status,
+            comment: `Execution time: ${test.duration}ms`,
+          },resolve, reject)
+        }).then(response => {
+          if (this.reporterOptions.allowFailedScreenshotUpload === true &&
+            (status === Status.Failed || status === Status.Retest)) {
+            this.testRailApi.uploadScreenshots(caseId, response[0].id);
+          }
         })
       });
     }

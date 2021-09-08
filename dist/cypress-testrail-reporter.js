@@ -75,7 +75,6 @@ var CypressTestRailReporter = /** @class */ (function (_super) {
          */
         if (_this.suiteId && _this.suiteId.toString().length) {
             runner.on('start', function () {
-                //this.serverTestCaseIds = this.testRailApi.getCases(this.suiteId);
                 /**
                 * runCounter is used to count how many spec files we have during one run
                 * in order to wait for close test run function
@@ -136,11 +135,18 @@ var CypressTestRailReporter = /** @class */ (function (_super) {
         var _this = this;
         var caseIds = shared_1.titleToCaseIds(test.title);
         if (caseIds.length) {
-            var caseResults = caseIds.map(function (caseId) {
-                _this.testRailApi.publishResult({
-                    case_id: caseId,
-                    status_id: status,
-                    comment: "Execution time: " + test.duration + "ms",
+            caseIds.map(function (caseId) {
+                new Promise(function (resolve, reject) {
+                    _this.testRailApi.publishResult({
+                        case_id: caseId,
+                        status_id: status,
+                        comment: "Execution time: " + test.duration + "ms",
+                    }, resolve, reject);
+                }).then(function (response) {
+                    if (_this.reporterOptions.allowFailedScreenshotUpload === true &&
+                        (status === testrail_interface_1.Status.Failed || status === testrail_interface_1.Status.Retest)) {
+                        _this.testRailApi.uploadScreenshots(caseId, response[0].id);
+                    }
                 });
             });
         }

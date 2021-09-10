@@ -131,17 +131,14 @@ export class CypressTestRailReporter extends reporters.Spec {
     let caseIds = titleToCaseIds(test.title)
     if (caseIds.length) {
       caseIds.map(caseId => {
-        new Promise<any>((resolve, reject) => {
-          this.testRailApi.publishResult({
-            case_id: caseId,
-            status_id: status,
-            comment: `Execution time: ${test.duration}ms`,
-          },resolve, reject)
-        }).then(response => {
-          if (this.reporterOptions.allowFailedScreenshotUpload === true &&
-            (status === Status.Failed || status === Status.Retest)) {
+        this.testRailApi.publishResult({
+          case_id: caseId,
+          status_id: status,
+          comment: `Execution time: ${test.duration}ms, case_id: ${caseId}`,
+        }).then((response) => {
+          if (this.reporterOptions.allowFailedScreenshotUpload === true && (status === Status.Failed || status === Status.Retest)) {
             this.testRailApi.uploadScreenshots(caseId, response[0].id);
-          }
+         }
         })
       });
     }

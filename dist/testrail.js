@@ -77,30 +77,37 @@ var TestRail = /** @class */ (function () {
                 console.log('Creating run with following cases:');
                 console.debug(response);
                 _this.caseIds = response;
-                axios({
-                    method: 'post',
-                    url: _this.base + "/add_run/" + _this.options.projectId,
-                    headers: { 'Content-Type': 'application/json' },
-                    auth: {
-                        username: _this.options.username,
-                        password: _this.options.password,
-                    },
-                    data: JSON.stringify({
-                        suite_id: suiteId,
-                        name: name,
-                        description: description,
-                        include_all: _this.includeAll,
-                        case_ids: _this.caseIds
-                    }),
-                })
-                    .then(function (response) {
-                    _this.runId = response.data.id;
-                    // cache the TestRail Run ID
-                    TestRailCache.store('runId', _this.runId);
-                })
-                    .catch(function (error) { return console.error(error); });
+                _this.addRun(name, description, suiteId);
             });
         }
+        else {
+            this.addRun(name, description, suiteId);
+        }
+    };
+    TestRail.prototype.addRun = function (name, description, suiteId) {
+        var _this = this;
+        axios({
+            method: 'post',
+            url: this.base + "/add_run/" + this.options.projectId,
+            headers: { 'Content-Type': 'application/json' },
+            auth: {
+                username: this.options.username,
+                password: this.options.password,
+            },
+            data: JSON.stringify({
+                suite_id: suiteId,
+                name: name,
+                description: description,
+                include_all: this.includeAll,
+                case_ids: this.caseIds
+            }),
+        })
+            .then(function (response) {
+            _this.runId = response.data.id;
+            // cache the TestRail Run ID
+            TestRailCache.store('runId', _this.runId);
+        })
+            .catch(function (error) { return console.error(error); });
     };
     TestRail.prototype.deleteRun = function () {
         this.runId = TestRailCache.retrieve('runId');
@@ -131,9 +138,9 @@ var TestRail = /** @class */ (function () {
             console.error(error);
         });
     };
-    TestRail.prototype.publishResult = function (results, resolve, reject) {
+    TestRail.prototype.publishResult = function (results) {
         this.runId = TestRailCache.retrieve('runId');
-        axios.post(this.base + "/add_results_for_cases/" + this.runId, {
+        return axios.post(this.base + "/add_results_for_cases/" + this.runId, {
             results: [{ case_id: results.case_id, status_id: results.status_id, comment: results.comment }],
         }, {
             auth: {
@@ -143,11 +150,10 @@ var TestRail = /** @class */ (function () {
         }).then(function (response) {
             console.log("Publishing following results:");
             console.debug(response.data);
-            resolve(response.data);
+            return response.data;
         })
             .catch(function (error) {
             console.error(error);
-            reject();
         });
     };
     TestRail.prototype.uploadAttachment = function (resultId, path) {
@@ -162,29 +168,68 @@ var TestRail = /** @class */ (function () {
                 password: this.options.password,
             },
             data: form,
+        }).then(function (response) {
+            console.log("Uploading screenshot...");
+            console.debug(response.data);
+        })
+            .catch(function (error) {
+            console.error(error);
         });
     };
     // This function will attach failed screenshot on each test result(comment) if founds it
     TestRail.prototype.uploadScreenshots = function (caseId, resultId) {
         var _this = this;
-        var SCREENSHOTS_FOLDER_PATH = path.join(__dirname, '/Users/dskrylev/monorepo/cypress/screenshots');
-        fs.readdir(SCREENSHOTS_FOLDER_PATH, function (err, files) {
-            if (err) {
-                return console.log('Unable to scan screenshots folder: ' + err);
-            }
-            files.forEach(function (file) {
-                if (file.includes("C" + caseId) && /(failed|attempt)/g.test(file)) {
-                    try {
-                        _this.uploadAttachment(resultId, SCREENSHOTS_FOLDER_PATH + file);
-                    }
-                    catch (err) {
-                        console.log('Screenshot upload error: ', err);
-                    }
-                }
+        var SCREENSHOTS_FOLDER_PATH = path.join(__dirname, '../../monorepo/cypress/screenshots');
+        fs.readdir(SCREENSHOTS_FOLDER_PATH, function (err, folder) {
+            folder.forEach(function (folder) {
+                fs.readdir(SCREENSHOTS_FOLDER_PATH + ("/" + folder), function (err, spec) {
+                    spec.forEach(function (spec) {
+                        fs.readdir(SCREENSHOTS_FOLDER_PATH + ("/" + folder + "/" + spec), function (err, file) {
+                            if (err) {
+                                return console.log('Unable to scan screenshots folder: ' + err);
+                            }
+                            console.log("Found following screenshots");
+                            console.debug(file);
+                            file.forEach(function (file) {
+                                if (file.includes("C" + caseId) && /(failed|attempt)/g.test(file)) {
+                                    try {
+                                        _this.uploadAttachment(resultId, SCREENSHOTS_FOLDER_PATH + '/' + folder + '/' + spec + '/' + file);
+                                    }
+                                    catch (err) {
+                                        console.log('Screenshot upload error: ', err);
+                                    }
+                                }
+                            });
+                        });
+                    });
+                });
             });
         });
     };
     ;
+    //
+    // fs.readdir(SCREENSHOTS_FOLDER_PATH + `/${folder}`, (err, file) => {
+    //         if (err) {
+    //           return console.log('Unable to scan screenshots folder: ' + err);
+    //         }
+    //
+    //         console.log("Found following screenshots");
+    //         console.debug(file);
+    //
+    //
+    //       })
+    //
+    //
+    // file.forEach(file => {
+    //           if (file.includes(`C${caseId}`) && /(failed|attempt)/g.test(file)) {
+    //             try {
+    //               this.uploadAttachment(resultId, SCREENSHOTS_FOLDER_PATH + file)
+    //             } catch (err) {
+    //               console.log('Screenshot upload error: ', err)
+    //             }
+    //           }
+    //         });
+    //
     TestRail.prototype.closeRun = function () {
         this.runId = TestRailCache.retrieve('runId');
         axios({

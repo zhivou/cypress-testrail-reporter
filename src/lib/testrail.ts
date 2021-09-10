@@ -68,31 +68,36 @@ export class TestRail {
           console.log('Creating run with following cases:');
           console.debug(response);
           this.caseIds = response;
-
-          axios({
-            method: 'post',
-            url: `${this.base}/add_run/${this.options.projectId}`,
-            headers: { 'Content-Type': 'application/json' },
-            auth: {
-              username: this.options.username,
-              password: this.options.password,
-            },
-            data: JSON.stringify({
-              suite_id: suiteId,
-              name,
-              description,
-              include_all: this.includeAll,
-              case_ids: this.caseIds
-            }),
-          })
-          .then(response => {
-              this.runId = response.data.id;
-              // cache the TestRail Run ID
-              TestRailCache.store('runId', this.runId);
-          })
-          .catch(error => console.error(error));
+          this.addRun(name, description, suiteId);
         })
+    } else {
+      this.addRun(name, description, suiteId);
     }
+  }
+
+  public addRun(name: string, description: string, suiteId: number) {
+    axios({
+      method: 'post',
+      url: `${this.base}/add_run/${this.options.projectId}`,
+      headers: { 'Content-Type': 'application/json' },
+      auth: {
+        username: this.options.username,
+        password: this.options.password,
+      },
+      data: JSON.stringify({
+        suite_id: suiteId,
+        name,
+        description,
+        include_all: this.includeAll,
+        case_ids: this.caseIds
+      }),
+    })
+    .then(response => {
+        this.runId = response.data.id;
+        // cache the TestRail Run ID
+        TestRailCache.store('runId', this.runId);
+    })
+    .catch(error => console.error(error));
   }
 
   public deleteRun() {
@@ -126,9 +131,9 @@ export class TestRail {
       })
   }
 
-  public publishResult(results: TestRailResult, resolve, reject){
+  public publishResult(results: TestRailResult){
     this.runId = TestRailCache.retrieve('runId');
-    axios.post(
+    return axios.post(
       `${this.base}/add_results_for_cases/${this.runId}`,
       {
         results: [{ case_id: results.case_id, status_id: results.status_id, comment: results.comment }],
@@ -142,11 +147,10 @@ export class TestRail {
       ).then(response => {
         console.log("Publishing following results:")
         console.debug(response.data)
-        resolve(response.data)
+        return response.data
       })
       .catch(error => {
         console.error(error);
-        reject()
     })
   }
 
@@ -163,29 +167,71 @@ export class TestRail {
           password: this.options.password,
         },
         data: form,
+      }).then(response => {
+        console.log("Uploading screenshot...")
+        console.debug(response.data)
       })
+      .catch(error => {
+        console.error(error);
+    })
   }
 
   // This function will attach failed screenshot on each test result(comment) if founds it
   public uploadScreenshots (caseId, resultId) {
-    const SCREENSHOTS_FOLDER_PATH = path.join(__dirname, 'cypress/screenshots');
+    const SCREENSHOTS_FOLDER_PATH = path.join(__dirname, '../../monorepo/cypress/screenshots');
 
-    fs.readdir(SCREENSHOTS_FOLDER_PATH, (err, files) => {
-      if (err) {
-        return console.log('Unable to scan screenshots folder: ' + err);
-      } 
+    fs.readdir(SCREENSHOTS_FOLDER_PATH, (err, folder) => {
+      folder.forEach(folder => {
+        fs.readdir(SCREENSHOTS_FOLDER_PATH + `/${folder}`, (err, spec) => {
+          spec.forEach(spec => {
+            fs.readdir(SCREENSHOTS_FOLDER_PATH + `/${folder}/${spec}`, (err, file) => {
+              if (err) {
+                return console.log('Unable to scan screenshots folder: ' + err);
+              }
 
-      files.forEach(file => {
-        if (file.includes(`C${caseId}`) && /(failed|attempt)/g.test(file)) {
-          try {
-            this.uploadAttachment(resultId, SCREENSHOTS_FOLDER_PATH + file)
-          } catch (err) {
-            console.log('Screenshot upload error: ', err)
-          }
-        }
-      });
+              console.log("Found following screenshots");
+              console.debug(file);
+
+              file.forEach(file => {
+                if (file.includes(`C${caseId}`) && /(failed|attempt)/g.test(file)) {
+                  try {
+                    this.uploadAttachment(resultId, SCREENSHOTS_FOLDER_PATH + '/' + folder + '/' + spec + '/' + file)} catch (err) {
+                console.log('Screenshot upload error: ', err)
+              }
+            }
+          });
+            })
+          })
+        })
+      })
     });
   };
+
+  //
+  // fs.readdir(SCREENSHOTS_FOLDER_PATH + `/${folder}`, (err, file) => {
+  //         if (err) {
+  //           return console.log('Unable to scan screenshots folder: ' + err);
+  //         }
+  //
+  //         console.log("Found following screenshots");
+  //         console.debug(file);
+  //
+  //
+  //       })
+  //
+
+
+  //
+  // file.forEach(file => {
+  //           if (file.includes(`C${caseId}`) && /(failed|attempt)/g.test(file)) {
+  //             try {
+  //               this.uploadAttachment(resultId, SCREENSHOTS_FOLDER_PATH + file)
+  //             } catch (err) {
+  //               console.log('Screenshot upload error: ', err)
+  //             }
+  //           }
+  //         });
+  //
 
   public closeRun() {
     this.runId = TestRailCache.retrieve('runId');

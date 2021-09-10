@@ -74,6 +74,7 @@ var CypressTestRailReporter = /** @class */ (function (_super) {
          * runner will not be triggered
          */
         if (_this.suiteId && _this.suiteId.toString().length) {
+            console.debug(runner);
             runner.on('start', function () {
                 /**
                 * runCounter is used to count how many spec files we have during one run
@@ -136,15 +137,12 @@ var CypressTestRailReporter = /** @class */ (function (_super) {
         var caseIds = shared_1.titleToCaseIds(test.title);
         if (caseIds.length) {
             caseIds.map(function (caseId) {
-                new Promise(function (resolve, reject) {
-                    _this.testRailApi.publishResult({
-                        case_id: caseId,
-                        status_id: status,
-                        comment: "Execution time: " + test.duration + "ms",
-                    }, resolve, reject);
+                _this.testRailApi.publishResult({
+                    case_id: caseId,
+                    status_id: status,
+                    comment: "Execution time: " + test.duration + "ms, case_id: " + caseId,
                 }).then(function (response) {
-                    if (_this.reporterOptions.allowFailedScreenshotUpload === true &&
-                        (status === testrail_interface_1.Status.Failed || status === testrail_interface_1.Status.Retest)) {
+                    if (_this.reporterOptions.allowFailedScreenshotUpload === true && (status === testrail_interface_1.Status.Failed || status === testrail_interface_1.Status.Retest)) {
                         _this.testRailApi.uploadScreenshots(caseId, response[0].id);
                     }
                 });
